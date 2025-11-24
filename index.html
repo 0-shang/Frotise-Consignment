@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>FROTISE SHOCK ABSORBER</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    
+    <style>
+        body { background-color: #f0f2f5; font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding-bottom: 100px; }
+        
+        /* LOGIN SECTION */
+        #loginSection {
+            height: 100vh; width: 100%;
+            display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(135deg, #141E30 0%, #243B55 100%);
+            position: fixed; top: 0; left: 0; z-index: 9999;
+        }
+        .login-card {
+            background: white; padding: 40px 30px;
+            border-radius: 20px; width: 90%; max-width: 400px; text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+
+        /* HEADER */
+        .header-bg {
+            background: linear-gradient(135deg, #000000 0%, #434343 100%);
+            color: white; padding: 30px 20px 60px;
+            border-bottom-left-radius: 30px; border-bottom-right-radius: 30px;
+            position: relative;
+        }
+        .logout-btn {
+            position: absolute; top: 15px; right: 15px;
+            color: rgba(255,255,255,0.7); text-decoration: none; font-size: 0.85rem;
+            border: 1px solid rgba(255,255,255,0.3); padding: 4px 12px; border-radius: 20px;
+        }
+        .my-stock-btn {
+            position: absolute; top: 15px; left: 15px;
+            background: #ffc107; color: #000; text-decoration: none; font-size: 0.75rem; font-weight: bold;
+            border: none; padding: 6px 14px; border-radius: 20px; display: none; cursor: pointer;
+            box-shadow: 0 2px 10px rgba(255, 193, 7, 0.3);
+        }
+        .shock-icon { width: 50px; height: 50px; fill: none; stroke: white; stroke-width: 2; margin-bottom: 10px; }
+
+        /* LIST ITEMS */
+        .search-card {
+            margin-top: -40px; background: white; border-radius: 15px;
+            padding: 20px; box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+        .result-item {
+            background: white; border-radius: 12px; margin-bottom: 10px;
+            padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            transition: transform 0.1s; cursor: pointer; position: relative;
+            border-left: 5px solid transparent;
+        }
+        .result-item:active { transform: scale(0.99); background-color: #f8f9fa; border-left-color: #141E30; }
+        
+        /* Stock & Price Tags */
+        .stock-tag { font-size: 0.7rem; padding: 4px 8px; border-radius: 6px; font-weight: bold; text-transform: uppercase;}
+        .bg-stock-high { background-color: #e8f5e9; color: #2e7d32; }
+        .bg-stock-low { background-color: #fff3cd; color: #856404; }
+        .bg-stock-zero { background-color: #ffebee; color: #c62828; }
+        
+        .price-original { text-decoration: line-through; color: #999; font-size: 0.85rem; margin-right: 5px; }
+        .price-promo { color: #d32f2f; font-weight: 800; font-size: 1.2rem; }
+        .price-regular { color: #333; font-weight: 800; font-size: 1.2rem; }
+        .promo-badge { font-size: 0.7rem; background-color: #dc3545; color: white; padding: 2px 6px; border-radius: 4px; vertical-align: middle; margin-right: 5px; }
+        
+        .part-code { color: #141E30; font-size: 1rem; font-weight: 800; letter-spacing: 0.5px; }
+        .part-name { font-weight: 600; color: #555; font-size: 0.9rem; line-height: 1.3; margin-bottom: 4px; }
+
+        /* CART FAB */
+        .fab-cart {
+            position: fixed; bottom: 30px; right: 30px;
+            background-color: #141E30; color: white;
+            width: 65px; height: 65px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 15px rgba(20, 30, 48, 0.4);
+            z-index: 1000; cursor: pointer; transition: transform 0.2s;
+        }
+        .fab-cart:active { transform: scale(0.9); }
+        .cart-badge {
+            position: absolute; top: -5px; right: -5px;
+            background-color: #dc3545; color: white;
+            border-radius: 50%; width: 24px; height: 24px;
+            font-size: 0.8rem; font-weight: bold;
+            display: flex; align-items: center; justify-content: center; border: 2px solid white;
+        }
+
+        .qty-control { display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .qty-btn { width: 35px; height: 35px; border-radius: 50%; border: 1px solid #dee2e6; background: white; font-weight: bold; color: #495057; }
+        .qty-display { width: 40px; text-align: center; font-weight: bold; border:none; background: transparent;}
+        
+        #loadingMsg { text-align:center; padding: 20px; color: #666; display: none;}
+    </style>
+</head>
+<body>
+
+    <!-- LOGIN SECTION -->
+    <div id="loginSection">
+        <div class="login-card animate__animated animate__fadeInUp">
+            <div class="mb-4">
+                <!-- Shock Absorber Icon -->
+                <svg class="shock-icon" viewBox="0 0 24 24" style="width:60px; height:60px; stroke:#141E30;">
+                    <path d="M12 2v3" stroke-linecap="round"/>
+                    <path d="M12 19v3" stroke-linecap="round"/>
+                    <path d="M9 5h6" stroke-linecap="round"/>
+                    <rect x="10" y="5" width="4" height="6" />
+                    <path d="M12 11l-3 1.5 6 1.5-6 1.5 6 1.5-6 1.5 3 1.5" fill="none" />
+                </svg>
+            </div>
+            <h4 class="mb-1 fw-bold">FROTISE</h4>
+            <p class="text-muted mb-4">SHOCK ABSORBER SYSTEM</p>
+            <div class="mb-3 text-start">
+                <input type="text" id="loginId" class="form-control form-control-lg" placeholder="Client Code">
+            </div>
+            <div class="mb-4 text-start">
+                <input type="password" id="loginPass" class="form-control form-control-lg" placeholder="Password">
+            </div>
+            <button onclick="window.attemptLogin()" class="btn btn-dark btn-lg w-100" style="background-color:#141E30;">Login</button>
+            <div id="loginError" class="text-danger mt-3 small" style="display:none;">Invalid credentials.</div>
+        </div>
+    </div>
+
+    <!-- MAIN APP -->
+    <div id="mainApp" style="display:none;">
+        <div class="header-bg text-center">
+            <a href="#" onclick="window.logout()" class="logout-btn"><i class="bi bi-box-arrow-right"></i> Logout</a>
+            
+            <!-- MY STOCK BUTTON (Only for special clients) -->
+            <button id="myStockBtn" class="my-stock-btn" onclick="window.openMyStock()">
+                <i class="bi bi-box-seam"></i> MY STOCK
+            </button>
+
+            <!-- Header Icon -->
+            <svg class="shock-icon" viewBox="0 0 24 24">
+                <path d="M12 2v3" stroke-linecap="round"/>
+                <path d="M12 19v3" stroke-linecap="round"/>
+                <path d="M9 5h6" stroke-linecap="round"/>
+                <rect x="10" y="5" width="4" height="6" fill="rgba(255,255,255,0.2)"/>
+                <path d="M12 11l-3 1.5 6 1.5-6 1.5 6 1.5-6 1.5 3 1.5" fill="none" />
+            </svg>
+
+            <h3 class="fw-bold mb-1">FROTISE</h3>
+            <p class="opacity-75 mb-0 small letter-spacing-1">SHOCK ABSORBER</p>
+            <!-- Welcome Message -->
+            <div class="mt-2 badge bg-light text-dark opacity-75 small" style="font-size: 0.85rem;">
+                Welcome, <span id="userDisplay" class="fw-bold text-uppercase"></span>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="search-card">
+                <div class="input-group input-group-lg">
+                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
+                    <input type="text" id="searchInput" class="form-control border-start-0" placeholder="" onkeyup="window.handleSearch()">
+                </div>
+                <div class="text-muted mt-2 small text-center">
+                    <span id="totalCount" class="fw-bold">0</span> items loaded
+                </div>
+            </div>
+
+            <div id="loadingMsg">Loading database...</div>
+            <div id="resultsList" class="mt-4"></div>
+        </div>
+
+        <div class="fab-cart" onclick="window.openCartModal()">
+            <i class="bi bi-cart-fill" style="font-size: 1.5rem;"></i>
+            <div id="cartBadge" class="cart-badge" style="display: none;">0</div>
+        </div>
+    </div>
+
+    <!-- PRODUCT MODAL -->
+    <div class="modal fade" id="productModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Product Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center pt-4">
+                    
+                    <!-- Info Only -->
+                    <h3 class="fw-bold text-primary mb-2" id="modalCode"></h3>
+                    <h6 class="text-muted mb-4 px-3" id="modalName"></h6>
+
+                    <div class="bg-light p-3 rounded mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted">Price Info:</span>
+                            <div id="modalPriceContainer" class="text-end"></div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-muted">Availability:</span>
+                            <span id="modalStockContent"></span>
+                        </div>
+                    </div>
+
+                    <div id="addToCartSection">
+                        <label class="form-label text-muted small">Order Quantity:</label>
+                        <div class="qty-control mb-4">
+                            <button class="qty-btn" onclick="window.updateQty(-1)">-</button>
+                            <input type="number" id="qtyInput" class="qty-display" value="1" readonly>
+                            <button class="qty-btn" onclick="window.updateQty(1)">+</button>
+                        </div>
+                        <div class="d-grid">
+                            <button onclick="window.addToCart()" class="btn btn-dark btn-lg" style="background-color: #141E30;">
+                                <i class="bi bi-cart-plus-fill"></i> Add to Cart
+                            </button>
+                        </div>
+                    </div>
+                    <div id="outOfStockMsg" class="alert alert-danger mt-3" style="display:none;">
+                        <i class="bi bi-x-circle"></i> Out of Stock
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CART MODAL -->
+    <div class="modal fade" id="cartModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-cart3"></i> Order List</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-2" id="cartBody"></div>
+                <div class="modal-footer d-block bg-light">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="fs-5 text-muted">Total:</span>
+                        <span class="fs-3 fw-bold text-danger" id="cartTotal">0</span>
+                    </div>
+                    <div id="limitWarning" class="alert alert-warning small mb-2" style="display:none;">
+                        <i class="bi bi-exclamation-triangle"></i> Limit: 100,000. Reduce qty.
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button onclick="window.confirmOrder()" class="btn btn-success btn-lg">
+                            <i class="bi bi-check-circle-fill"></i> Confirm & Order
+                        </button>
+                        <button onclick="window.downloadCSV()" class="btn btn-outline-dark btn-sm">
+                            <i class="bi bi-download"></i> Download CSV
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MY STOCK MODAL (With Export) -->
+    <div class="modal fade" id="myStockModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-scrollable modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-box-seam"></i> My Inventory</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <table class="table table-striped mb-0 align-middle">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <th>Code</th>
+                                <th>Name</th>
+                                <th>Qty</th>
+                                <th class="text-end">Price</th>
+                            </tr>
+                        </thead>
+                        <tbody id="myStockTableBody">
+                            <!-- Content injected here -->
+                        </tbody>
+                    </table>
+                    <div id="myStockEmpty" class="text-center py-4 text-muted" style="display:none;">
+                        No stock records found.
+                    </div>
+                </div>
+                <div class="modal-footer d-block">
+                    <button type="button" class="btn btn-success w-100" onclick="window.downloadMyStockCSV()">
+                        <i class="bi bi-download"></i> Download Inventory CSV
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // CONFIG
+        const currencyUnit = ""; 
+        const myWhatsAppNumber = "233550584720"; 
+        const orderLimit = 100000; 
+        const promoMinQty = 5; 
+        
+        // VALID USERS with NAMES
+        const validUsers = [
+            { id: "GH98907", pass: "0000", name: "AKUA-KWAKU", hasStock: true },
+            { id: "GH98673", pass: "0000", name: "KWAKU-AKUA", hasStock: true },
+            { id: "GH98816", pass: "0000", name: "XIANO", hasStock: true },
+            { id: "GH98904", pass: "0000", name: "Client", hasStock: false }
+        ];
+
+        // STATE
+        window.cart = [];
+        window.currentItem = null;
+        window.loggedInUser = null; // Stores User Object {id, name...}
+        window.productModal = null;
+        window.cartModal = null;
+        window.myStockModal = null;
+        window.database = []; 
+        window.clientStockDb = []; 
+
+        // --- INIT ---
+        document.addEventListener('DOMContentLoaded', function() {
+            window.productModal = new bootstrap.Modal(document.getElementById('productModal'));
+            window.cartModal = new bootstrap.Modal(document.getElementById('cartModal'));
+            window.myStockModal = new bootstrap.Modal(document.getElementById('myStockModal'));
+            loadDataFromCSV();
+        });
+
+        function loadDataFromCSV() {
+            document.getElementById('loadingMsg').style.display = 'block';
+            fetch('products.csv?v=' + new Date().getTime())
+                .then(response => {
+                    if (!response.ok) throw new Error("CSV not found");
+                    return response.text();
+                })
+                .then(text => parseAndSetData(text))
+                .catch(err => {
+                    console.log("CSV Load Error: " + err.message);
+                    // Fallback demo data
+                    window.database = [
+                        {code:"333507", name:"SHOCK ABSORBER REAR", stock:50, price:120, promo:0}
+                    ];
+                    finishLoad();
+                });
+        }
+
+        function parseAndSetData(csvText) {
+            const lines = csvText.split('\n');
+            const newDb = [];
+            for(let i=1; i<lines.length; i++) {
+                const line = lines[i].trim();
+                if(!line) continue;
+                const cols = line.split(',');
+                if(cols.length >= 4) {
+                    let promo = 0;
+                    if(cols.length >= 5) promo = parseFloat(cols[4].trim()) || 0;
+                    newDb.push({
+                        code: cols[0].trim(),
+                        name: cols[1].trim(),
+                        stock: parseInt(cols[2].trim()) || 0,
+                        price: parseFloat(cols[3].trim()) || 0,
+                        promo: promo 
+                    });
+                }
+            }
+            if(newDb.length > 0) window.database = newDb;
+            finishLoad();
+        }
+
+        function finishLoad() {
+            document.getElementById('totalCount').innerText = window.database.length;
+            document.getElementById('loadingMsg').style.display = 'none';
+        }
+
+        // --- LOAD CLIENT STOCK (5 Columns: Client, Code, Name, Stock, Price) ---
+        function loadClientStockCSV() {
+            fetch('client_stock.csv?v=' + new Date().getTime())
+                .then(res => res.text())
+                .then(text => {
+                    const lines = text.split('\n');
+                    const clientDb = [];
+                    for(let i=1; i<lines.length; i++) {
+                        const line = lines[i].trim();
+                        if(!line) continue;
+                        const cols = line.split(',');
+                        if(cols.length >= 5) { 
+                            clientDb.push({
+                                client: cols[0].trim().toUpperCase(),
+                                code: cols[1].trim(),
+                                name: cols[2].trim(), 
+                                stock: parseInt(cols[3].trim()) || 0,
+                                price: parseFloat(cols[4].trim()) || 0
+                            });
+                        }
+                    }
+                    window.clientStockDb = clientDb;
+                })
+                .catch(err => console.log("Client Stock CSV error"));
+        }
+
+        // --- LOGIN ---
+        window.attemptLogin = function() {
+            const idInput = document.getElementById('loginId').value.trim().toUpperCase();
+            const passInput = document.getElementById('loginPass').value.trim();
+
+            const user = validUsers.find(u => u.id === idInput && u.pass === passInput);
+
+            if (user) {
+                window.loggedInUser = user; 
+                
+                // Set Welcome Message
+                document.getElementById('userDisplay').innerText = user.name;
+                
+                document.getElementById('loginSection').style.display = 'none';
+                document.getElementById('mainApp').style.display = 'block';
+                
+                if(user.hasStock) {
+                    document.getElementById('myStockBtn').style.display = 'inline-block';
+                    loadClientStockCSV(); 
+                }
+
+                window.handleSearch(); 
+            } else {
+                document.getElementById('loginError').style.display = 'block';
+            }
+        };
+
+        window.logout = function() { location.reload(); };
+
+        // --- MY STOCK LOGIC & EXPORT ---
+        window.openMyStock = function() {
+            const tbody = document.getElementById('myStockTableBody');
+            tbody.innerHTML = '';
+            
+            const myItems = window.clientStockDb.filter(item => item.client === window.loggedInUser.id);
+            
+            if(myItems.length === 0) {
+                document.getElementById('myStockEmpty').style.display = 'block';
+            } else {
+                document.getElementById('myStockEmpty').style.display = 'none';
+                myItems.forEach(item => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td class="fw-bold text-primary">${item.code}</td>
+                            <td class="small">${item.name}</td>
+                            <td>${item.stock}</td>
+                            <td class="text-end fw-bold">${currencyUnit}${item.price}</td>
+                        </tr>
+                    `;
+                });
+            }
+            window.myStockModal.show();
+        };
+
+        window.downloadMyStockCSV = function() {
+            const myItems = window.clientStockDb.filter(item => item.client === window.loggedInUser.id);
+            
+            if(myItems.length === 0) return alert("No stock records to export.");
+
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Part Code,Name,Quantity,Price\n"; 
+
+            myItems.forEach(item => {
+                // sanitize name remove commas
+                const safeName = item.name.replace(/,/g, " ");
+                csvContent += `${item.code},${safeName},${item.stock},${item.price}\n`;
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `Inventory_${window.loggedInUser.name}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
+
+        window.getPriceForItem = function(item, qty) {
+            if (item.promo > 0 && item.promo < item.price && qty >= promoMinQty) {
+                return item.promo;
+            }
+            return item.price;
+        };
+
+        // --- SEARCH ---
+        window.handleSearch = function() {
+            const rawInput = document.getElementById('searchInput').value.toUpperCase().trim();
+            const listDiv = document.getElementById('resultsList');
+            
+            if(window.database.length === 0) return;
+
+            if(rawInput.length < 1) { 
+                listDiv.innerHTML = `<div class="text-center text-muted mt-5 opacity-50"><i class="bi bi-search fs-1"></i><p class="mt-2">Enter Code or Name</p></div>`;
+                return;
+            }
+
+            let results = [];
+            if (rawInput === 'STOCK') {
+                results = window.database.filter(i => i.stock > 0);
+            } else {
+                const terms = rawInput.split(/\s+/);
+                results = window.database.filter(item => {
+                    const text = (item.code + " " + item.name).toUpperCase();
+                    return terms.every(term => text.includes(term));
+                });
+            }
+
+            if (results.length === 0) {
+                listDiv.innerHTML = '<div class="text-center mt-5 text-muted">No items found.</div>';
+                return;
+            }
+
+            let html = '';
+            results.forEach(item => {
+                const dbIndex = window.database.indexOf(item);
+                
+                let stockBadge = '';
+                if (item.stock <= 0) stockBadge = `<span class="stock-tag bg-stock-zero">OUT OF STOCK</span>`;
+                else if (item.stock <= 10) stockBadge = `<span class="stock-tag bg-stock-low">LESS THAN 10</span>`;
+                else stockBadge = `<span class="stock-tag bg-stock-high">IN STOCK</span>`;
+
+                let priceDisplay = `<div class="price-text text-end mt-1">${currencyUnit}${item.price}</div>`;
+                
+                if(item.promo > 0 && item.promo < item.price) {
+                    priceDisplay = `
+                        <div class="text-end mt-1">
+                            <div class="price-original">${currencyUnit}${item.price}</div>
+                            <div class="price-promo">${currencyUnit}${item.promo} <span style="font-size:0.7rem; color:#666; font-weight:normal;">(Min 5)</span></div>
+                        </div>`;
+                }
+
+                html += `
+                <div class="result-item d-flex align-items-center bg-white rounded" onclick="window.openProduct(${dbIndex})">
+                    <div class="flex-grow-1">
+                        <div class="d-flex justify-content-between align-items-start">
+                             <div class="part-code">${item.code}</div>
+                             ${stockBadge}
+                        </div>
+                        <div class="part-name text-muted mt-1">${item.name}</div>
+                        ${priceDisplay}
+                    </div>
+                </div>`;
+            });
+            listDiv.innerHTML = html;
+        };
+
+        // --- PRODUCT MODAL ---
+        window.openProduct = function(index) {
+            window.currentItem = window.database[index];
+            if(!window.currentItem) return;
+
+            const item = window.currentItem;
+            document.getElementById('modalName').innerText = item.name;
+            document.getElementById('modalCode').innerText = item.code;
+            document.getElementById('qtyInput').value = 1;
+
+            const priceContainer = document.getElementById('modalPriceContainer');
+            if(item.promo > 0 && item.promo < item.price) {
+                priceContainer.innerHTML = `
+                    <span class="promo-badge">SALE</span>
+                    <div class="d-inline-block text-end">
+                        <div class="price-original">${currencyUnit}${item.price}</div>
+                        <div class="price-promo lh-1">${currencyUnit}${item.promo}</div>
+                        <small class="text-muted" style="font-size:0.65rem">Min: 5pcs</small>
+                    </div>`;
+            } else {
+                priceContainer.innerHTML = `<span class="price-regular fs-3">${currencyUnit}${item.price}</span>`;
+            }
+
+            const statusDiv = document.getElementById('modalStockContent');
+            const addBtnDiv = document.getElementById('addToCartSection');
+            const msgDiv = document.getElementById('outOfStockMsg');
+
+            if(item.stock <= 0) {
+                statusDiv.innerHTML = `<span class="badge bg-stock-zero">OUT OF STOCK</span>`;
+                addBtnDiv.style.display = 'none';
+                msgDiv.style.display = 'block';
+            } else {
+                addBtnDiv.style.display = 'block';
+                msgDiv.style.display = 'none';
+                if(item.stock <= 10) statusDiv.innerHTML = `<span class="badge bg-stock-low text-dark">LESS THAN 10</span>`;
+                else statusDiv.innerHTML = `<span class="badge bg-stock-high">IN STOCK</span>`;
+            }
+            
+            window.productModal.show();
+        };
+
+        // --- CART ---
+        window.updateQty = function(diff) {
+            const input = document.getElementById('qtyInput');
+            let val = parseInt(input.value) + diff;
+            if(val < 1) val = 1;
+            if(val > window.currentItem.stock) {
+                alert('Max stock reached');
+                val = window.currentItem.stock;
+            }
+            input.value = val;
+        };
+
+        window.addToCart = function() {
+            const qty = parseInt(document.getElementById('qtyInput').value);
+            const item = window.currentItem;
+            const exist = window.cart.find(c => c.code === item.code);
+            
+            const effectivePrice = (item.promo > 0 && item.promo < item.price) ? item.promo : item.price;
+
+            if(exist) {
+                if((exist.qty + qty) > item.stock) return alert('Total exceeds stock limit');
+                exist.qty += qty;
+            } else {
+                window.cart.push({...item, qty: qty, effectivePrice: effectivePrice});
+            }
+            
+            window.updateCartUI();
+            window.productModal.hide();
+        };
+
+        window.updateCartUI = function() {
+            const count = window.cart.reduce((a, b) => a + b.qty, 0);
+            const badge = document.getElementById('cartBadge');
+            badge.innerText = count;
+            badge.style.display = count > 0 ? 'flex' : 'none';
+        };
+
+        window.openCartModal = function() {
+            window.renderCartItems();
+            window.cartModal.show();
+        };
+
+        window.renderCartItems = function() {
+            const modalBody = document.getElementById('cartBody');
+            modalBody.innerHTML = '';
+            let totalAmount = 0;
+
+            if (window.cart.length === 0) {
+                modalBody.innerHTML = '<div class="text-center py-5 text-muted"><i class="bi bi-cart-x fs-1"></i><p class="mt-2">Cart is empty</p></div>';
+            } else {
+                window.cart.forEach((item, index) => {
+                    let activePrice = window.getPriceForItem(item, item.qty);
+                    let isPromoActive = (activePrice < item.price);
+
+                    totalAmount += activePrice * item.qty;
+
+                    let priceHtml = '';
+                    if (item.promo > 0 && item.promo < item.price) {
+                        if(isPromoActive) {
+                            priceHtml = `
+                                <div class="text-success fw-bold small">Promo: ${currencyUnit}${item.promo}</div>
+                                <div class="text-muted small text-decoration-line-through">Reg: ${currencyUnit}${item.price}</div>
+                            `;
+                        } else {
+                            priceHtml = `
+                                <div class="text-dark fw-bold small">Reg: ${currencyUnit}${item.price}</div>
+                                <div class="text-warning small" style="font-size:0.7rem;">Add ${promoMinQty - item.qty} more for ${currencyUnit}${item.promo}</div>
+                            `;
+                        }
+                    } else {
+                        priceHtml = `<div class="text-danger fw-bold small">${currencyUnit}${item.price}</div>`;
+                    }
+
+                    modalBody.innerHTML += `
+                        <div class="card mb-2 border-0 shadow-sm">
+                            <div class="card-body p-2 d-flex justify-content-between align-items-center">
+                                <div style="width:55%">
+                                    <div class="fw-bold small">${item.code}</div>
+                                    <div class="small text-muted text-truncate">${item.name}</div>
+                                    ${priceHtml}
+                                </div>
+                                <div class="d-flex flex-column align-items-end">
+                                    <div class="qty-control mb-1">
+                                        <button class="qty-btn p-0" onclick="window.updateCartItemQty(${index}, -1)">-</button>
+                                        <span class="fw-bold mx-2">${item.qty}</span>
+                                        <button class="qty-btn p-0" onclick="window.updateCartItemQty(${index}, 1)">+</button>
+                                    </div>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="window.removeCartItem(${index})">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            document.getElementById('cartTotal').innerText = currencyUnit + totalAmount;
+            
+            const warning = document.getElementById('limitWarning');
+            warning.style.display = (totalAmount > orderLimit) ? 'block' : 'none';
+        };
+
+        window.updateCartItemQty = function(index, change) {
+            const item = window.cart[index];
+            let newQty = item.qty + change;
+            if (newQty < 1) return; 
+            if (newQty > item.stock) return alert(`Max stock available is ${item.stock}`);
+            
+            item.qty = newQty;
+            window.updateCartUI();
+            window.renderCartItems(); 
+        };
+
+        window.removeCartItem = function(index) {
+            if(confirm('Remove this item?')) {
+                window.cart.splice(index, 1);
+                window.updateCartUI();
+                window.renderCartItems();
+            }
+        };
+
+        window.confirmOrder = function() {
+            if (window.cart.length === 0) return alert("Cart is empty");
+            
+            const totalAmount = window.cart.reduce((sum, item) => {
+                return sum + (window.getPriceForItem(item, item.qty) * item.qty);
+            }, 0);
+            
+            if (totalAmount > orderLimit) {
+                return alert(`Order limit exceeded! Max: ${orderLimit}`);
+            }
+            
+            // Deduct Stock
+            window.cart.forEach(cItem => {
+                const dbItem = window.database.find(d => d.code === cItem.code);
+                if(dbItem) dbItem.stock = Math.max(0, dbItem.stock - cItem.qty);
+            });
+
+            // WhatsApp
+            let msg = `🛒 *FROTISE ORDER (${window.loggedInUser.name})* \n\n`;
+            window.cart.forEach(i => {
+                let finalP = window.getPriceForItem(i, i.qty);
+                msg += `▪️ ${i.code} (x${i.qty}) - ${currencyUnit}${finalP}\n`;
+            });
+            msg += `\n💰 *TOTAL: ${currencyUnit}${totalAmount}*`;
+            window.open(`https://wa.me/${myWhatsAppNumber}?text=${encodeURIComponent(msg)}`, '_blank');
+
+            window.cart = [];
+            window.updateCartUI();
+            window.cartModal.hide();
+            window.handleSearch(); 
+        };
+
+        window.downloadCSV = function() {
+            if (window.cart.length === 0) return alert("Cart is empty");
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Client,PartCode,Quantity,FinalPrice,LineTotal\n"; 
+            window.cart.forEach(item => {
+                let finalP = window.getPriceForItem(item, item.qty);
+                csvContent += `${window.loggedInUser.name},${item.code},${item.qty},${finalP},${finalP * item.qty}\n`;
+            });
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `FROTISE_Order.csv`);
+            document.body.appendChild(link);
+            link.click();
+        };
+
+        document.getElementById('loginPass').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') window.attemptLogin();
+        });
+    </script>
+</body>
+</html>
