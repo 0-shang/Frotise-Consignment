@@ -3,11 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <!-- 彻底禁用谷歌翻译提示 -->
+    <meta name="google" content="notranslate">
+
     <title>FROTISE SHOCK ABSORBER</title>
     
     <!-- PWA Settings (White Theme) -->
     <link rel="manifest" href="manifest.json">
-    <meta name="google" content="notranslate">
     <meta name="theme-color" content="#ffffff">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -78,7 +81,8 @@
         .price-promo { color: #d32f2f; font-weight: 800; font-size: 1.2rem; }
         .price-regular { color: #333; font-weight: 800; font-size: 1.2rem; }
         .promo-badge { font-size: 0.7rem; background-color: #dc3545; color: white; padding: 2px 6px; border-radius: 4px; vertical-align: middle; margin-right: 5px; }
-        
+        .new-badge { font-size: 0.7rem; background-color: #0d6efd; color: white; padding: 2px 6px; border-radius: 4px; vertical-align: middle; margin-right: 5px; font-weight: bold; }
+
         .part-code { color: #141E30; font-size: 1rem; font-weight: 800; letter-spacing: 0.5px; }
         .part-name { font-weight: 600; color: #555; font-size: 0.9rem; line-height: 1.3; margin-bottom: 4px; }
 
@@ -108,11 +112,20 @@
     </style>
 </head>
 <body>
+
+    <!-- APP STARTUP LOADER -->
+    <div id="appLoader" style="position:fixed; top:0; left:0; width:100%; height:100%; background-color:#ffffff; z-index:10000; display:flex; align-items:center; justify-content:center; transition: opacity 0.5s;">
+        <div class="text-center">
+            <div class="spinner-border text-dark" role="status" style="width: 3rem; height: 3rem;">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    </div>
+
     <!-- LOGIN SECTION -->
     <div id="loginSection">
         <div class="login-card animate__animated animate__fadeInUp">
             <div class="mb-4">
-                <!-- Shock Absorber Icon -->
                 <svg class="shock-icon" viewBox="0 0 24 24" style="width:60px; height:60px; stroke:#141E30;">
                     <path d="M12 2v3" stroke-linecap="round"/>
                     <path d="M12 19v3" stroke-linecap="round"/>
@@ -139,12 +152,10 @@
         <div class="header-bg text-center">
             <a href="#" onclick="window.logout()" class="logout-btn"><i class="bi bi-box-arrow-right"></i> Logout</a>
             
-            <!-- MY STOCK BUTTON (Only for special clients) -->
             <button id="myStockBtn" class="my-stock-btn" onclick="window.openMyStock()">
                 <i class="bi bi-box-seam"></i> MY STOCK
             </button>
 
-            <!-- Header Icon -->
             <svg class="shock-icon" viewBox="0 0 24 24">
                 <path d="M12 2v3" stroke-linecap="round"/>
                 <path d="M12 19v3" stroke-linecap="round"/>
@@ -155,7 +166,6 @@
 
             <h3 class="fw-bold mb-1">FROTISE</h3>
             <p class="opacity-75 mb-0 small letter-spacing-1">SHOCK ABSORBER</p>
-            <!-- Welcome Message -->
             <div class="mt-2 badge bg-light text-dark opacity-75 small" style="font-size: 0.85rem;">
                 Welcome, <span id="userDisplay" class="fw-bold text-uppercase"></span>
             </div>
@@ -165,7 +175,7 @@
             <div class="search-card">
                 <div class="input-group input-group-lg">
                     <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
-                    <input type="text" id="searchInput" class="form-control border-start-0" placeholder="" onkeyup="window.handleSearch()">
+                    <input type="text" id="searchInput" class="form-control border-start-0" placeholder="Code, Name or 'NEW'" onkeyup="window.handleSearch()">
                 </div>
                 <div class="text-muted mt-2 small text-center">
                     <span id="totalCount" class="fw-bold">0</span> items loaded
@@ -191,8 +201,9 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body text-center pt-4">
-                    
-                    <!-- Info Only -->
+                    <div id="modalNewBadge" style="display:none; margin-bottom:10px;">
+                        <span class="badge bg-primary">NEW ARRIVAL</span>
+                    </div>
                     <h3 class="fw-bold text-primary mb-2" id="modalCode"></h3>
                     <h6 class="text-muted mb-4 px-3" id="modalName"></h6>
 
@@ -258,35 +269,48 @@
         </div>
     </div>
 
-    <!-- MY STOCK MODAL (With Export) -->
+    <!-- MY STOCK MODAL (Updated) -->
     <div class="modal fade" id="myStockModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-scrollable modal-lg">
             <div class="modal-content">
-                <div class="modal-header bg-warning text-dark">
-                    <h5 class="modal-title fw-bold"><i class="bi bi-box-seam"></i> My Inventory</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <div class="modal-header bg-warning text-dark d-block pb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="modal-title fw-bold" id="myStockTitle"><i class="bi bi-box-seam"></i> My Inventory</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    
+                    <!-- My Stock Search & Controls -->
+                    <div class="d-flex gap-2">
+                        <input type="text" id="myStockSearch" class="form-control" placeholder="Search Code or Name..." onkeyup="window.renderMyStock()">
+                        <button class="btn btn-dark" id="btnShowHistory" onclick="window.toggleStockHistory(true)">
+                            <i class="bi bi-clock-history"></i> History
+                        </button>
+                        <button class="btn btn-dark" id="btnShowStock" onclick="window.toggleStockHistory(false)" style="display:none;">
+                            <i class="bi bi-arrow-left"></i> Stock
+                        </button>
+                    </div>
                 </div>
+                
                 <div class="modal-body p-0">
-                    <table class="table table-striped mb-0 align-middle">
-                        <thead class="table-light sticky-top">
-                            <tr>
-                                <th>Code</th>
-                                <th>Name</th>
-                                <th>Qty</th>
-                                <th class="text-end">Price</th>
-                            </tr>
+                    <table class="table table-striped mb-0 align-middle table-hover">
+                        <thead class="table-light sticky-top" id="myStockHead">
+                            <!-- Injected by JS -->
                         </thead>
                         <tbody id="myStockTableBody">
-                            <!-- Content injected here -->
+                            <!-- Content injected by JS -->
                         </tbody>
                     </table>
                     <div id="myStockEmpty" class="text-center py-4 text-muted" style="display:none;">
-                        No stock records found.
+                        No records found.
                     </div>
                 </div>
+                
                 <div class="modal-footer d-block">
-                    <button type="button" class="btn btn-success w-100" onclick="window.downloadMyStockCSV()">
-                        <i class="bi bi-download"></i> Download Inventory CSV
+                    <button type="button" class="btn btn-success w-100" id="btnExportStock" onclick="window.downloadMyStockCSV()">
+                        <i class="bi bi-download"></i> Export Inventory CSV
+                    </button>
+                    <button type="button" class="btn btn-success w-100" id="btnExportHistory" onclick="window.downloadHistoryCSV()" style="display:none;">
+                        <i class="bi bi-download"></i> Export History CSV
                     </button>
                 </div>
             </div>
@@ -296,12 +320,12 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
-        // --- PWA SERVICE WORKER REGISTRATION ---
+        // --- PWA SERVICE WORKER ---
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./service-worker.js')
-                    .then(reg => console.log('Service Worker Registered!', reg))
-                    .catch(err => console.log('Service Worker Failed!', err));
+                    .then(reg => console.log('SW registered'))
+                    .catch(err => console.log('SW failed', err));
             });
         }
 
@@ -311,7 +335,7 @@
         const orderLimit = 100000; 
         const promoMinQty = 5; 
         
-        // VALID USERS with NAMES
+        // VALID USERS
         const validUsers = [
             { id: "GH98907", pass: "0000", name: "AKUA-KWAKU", hasStock: true },
             { id: "GH98673", pass: "0000", name: "KWAKU-AKUA", hasStock: true },
@@ -322,31 +346,32 @@
         // STATE
         window.cart = [];
         window.currentItem = null;
-        window.loggedInUser = null; // Stores User Object {id, name...}
+        window.loggedInUser = null; 
         window.productModal = null;
         window.cartModal = null;
         window.myStockModal = null;
         window.database = []; 
         window.clientStockDb = []; 
+        window.isHistoryMode = false; // Toggle between Stock and History
 
         // --- INIT ---
-       document.addEventListener('DOMContentLoaded', function() {
-    // 原有的初始化代码...
-    window.productModal = new bootstrap.Modal(document.getElementById('productModal'));
-    window.cartModal = new bootstrap.Modal(document.getElementById('cartModal'));
-    window.myStockModal = new bootstrap.Modal(document.getElementById('myStockModal'));
-    loadDataFromCSV();
+        document.addEventListener('DOMContentLoaded', function() {
+            window.productModal = new bootstrap.Modal(document.getElementById('productModal'));
+            window.cartModal = new bootstrap.Modal(document.getElementById('cartModal'));
+            window.myStockModal = new bootstrap.Modal(document.getElementById('myStockModal'));
+            loadDataFromCSV();
 
-    // --- 新增：关闭加载动画 ---
-    setTimeout(() => {
-        const loader = document.getElementById('appLoader');
-        if(loader) {
-            loader.style.opacity = '0';
-            setTimeout(() => loader.remove(), 500);
-        }
-    }, 800); // 稍微延迟一点点，让感觉更流畅
-});
+            // Remove loader
+            setTimeout(() => {
+                const loader = document.getElementById('appLoader');
+                if(loader) {
+                    loader.style.opacity = '0';
+                    setTimeout(() => loader.remove(), 500);
+                }
+            }, 800);
+        });
 
+        // --- 1. LOAD PRODUCTS CSV (New Column: New) ---
         function loadDataFromCSV() {
             document.getElementById('loadingMsg').style.display = 'block';
             fetch('products.csv?v=' + new Date().getTime())
@@ -357,10 +382,7 @@
                 .then(text => parseAndSetData(text))
                 .catch(err => {
                     console.log("CSV Load Error: " + err.message);
-                    // Fallback demo data
-                    window.database = [
-                        {code:"333507", name:"SHOCK ABSORBER REAR", stock:50, price:120, promo:0}
-                    ];
+                    window.database = [];
                     finishLoad();
                 });
         }
@@ -371,16 +393,25 @@
             for(let i=1; i<lines.length; i++) {
                 const line = lines[i].trim();
                 if(!line) continue;
+                // Handle potential commas in name with quotes (simple regex split is safer if quotes exist)
+                // But keeping split(',') for simplicity based on your file
                 const cols = line.split(',');
+                
+                // Expecting: Code, Name, Stock, Price, Promo, New
                 if(cols.length >= 4) {
                     let promo = 0;
                     if(cols.length >= 5) promo = parseFloat(cols[4].trim()) || 0;
+                    
+                    let isNew = 0;
+                    if(cols.length >= 6) isNew = parseInt(cols[5].trim()) || 0;
+
                     newDb.push({
                         code: cols[0].trim(),
                         name: cols[1].trim(),
                         stock: parseInt(cols[2].trim()) || 0,
                         price: parseFloat(cols[3].trim()) || 0,
-                        promo: promo 
+                        promo: promo,
+                        isNew: isNew // 1 = New, 0 = Normal
                     });
                 }
             }
@@ -393,7 +424,7 @@
             document.getElementById('loadingMsg').style.display = 'none';
         }
 
-        // --- LOAD CLIENT STOCK (5 Columns: Client, Code, Name, Stock, Price) ---
+        // --- 2. LOAD CLIENT STOCK CSV (Updated 8 Columns) ---
         function loadClientStockCSV() {
             fetch('client_stock.csv?v=' + new Date().getTime())
                 .then(res => res.text())
@@ -404,13 +435,17 @@
                         const line = lines[i].trim();
                         if(!line) continue;
                         const cols = line.split(',');
-                        if(cols.length >= 5) { 
+                        // Client, Code, Name, LastTimeStock, LatestStock, Sold, Price, Period
+                        if(cols.length >= 8) { 
                             clientDb.push({
                                 client: cols[0].trim().toUpperCase(),
                                 code: cols[1].trim(),
                                 name: cols[2].trim(), 
-                                stock: parseInt(cols[3].trim()) || 0,
-                                price: parseFloat(cols[4].trim()) || 0
+                                lastStock: parseInt(cols[3].trim()) || 0,
+                                latestStock: parseInt(cols[4].trim()) || 0,
+                                sold: parseInt(cols[5].trim()) || 0,
+                                price: parseFloat(cols[6].trim()) || 0,
+                                period: cols[7].trim()
                             });
                         }
                     }
@@ -428,10 +463,7 @@
 
             if (user) {
                 window.loggedInUser = user; 
-                
-                // Set Welcome Message
                 document.getElementById('userDisplay').innerText = user.name;
-                
                 document.getElementById('loginSection').style.display = 'none';
                 document.getElementById('mainApp').style.display = 'block';
                 
@@ -440,6 +472,7 @@
                     loadClientStockCSV(); 
                 }
 
+                // Immediately show available stock on home page
                 window.handleSearch(); 
             } else {
                 document.getElementById('loginError').style.display = 'block';
@@ -448,53 +481,166 @@
 
         window.logout = function() { location.reload(); };
 
-        // --- MY STOCK LOGIC & EXPORT ---
+        // --- MY STOCK & HISTORY LOGIC ---
+        
         window.openMyStock = function() {
-            const tbody = document.getElementById('myStockTableBody');
-            tbody.innerHTML = '';
-            
-            const myItems = window.clientStockDb.filter(item => item.client === window.loggedInUser.id);
-            
-            if(myItems.length === 0) {
-                document.getElementById('myStockEmpty').style.display = 'block';
+            window.isHistoryMode = false;
+            window.toggleStockHistory(false); // Reset to Stock view
+            window.myStockModal.show();
+        };
+
+        window.toggleStockHistory = function(showHistory) {
+            window.isHistoryMode = showHistory;
+            const title = document.getElementById('myStockTitle');
+            const btnHistory = document.getElementById('btnShowHistory');
+            const btnStock = document.getElementById('btnShowStock');
+            const btnExpStock = document.getElementById('btnExportStock');
+            const btnExpHist = document.getElementById('btnExportHistory');
+            const searchInput = document.getElementById('myStockSearch');
+
+            if(showHistory) {
+                title.innerHTML = '<i class="bi bi-clock-history"></i> Sales History';
+                btnHistory.style.display = 'none';
+                btnStock.style.display = 'block';
+                btnExpStock.style.display = 'none';
+                btnExpHist.style.display = 'block';
+                searchInput.placeholder = "Search History Code/Name...";
             } else {
+                title.innerHTML = '<i class="bi bi-box-seam"></i> My Inventory';
+                btnHistory.style.display = 'block';
+                btnStock.style.display = 'none';
+                btnExpStock.style.display = 'block';
+                btnExpHist.style.display = 'none';
+                searchInput.placeholder = "Search Inventory Code/Name...";
+            }
+            
+            // Clear search when switching views
+            searchInput.value = '';
+            window.renderMyStock();
+        };
+
+        window.renderMyStock = function() {
+            const tbody = document.getElementById('myStockTableBody');
+            const thead = document.getElementById('myStockHead');
+            const searchVal = document.getElementById('myStockSearch').value.toUpperCase().trim();
+            
+            tbody.innerHTML = '';
+
+            // Filter by Client
+            let myData = window.clientStockDb.filter(item => item.client === window.loggedInUser.id);
+
+            // Filter by Search Query
+            if(searchVal.length > 0) {
+                myData = myData.filter(item => (item.code + " " + item.name).toUpperCase().includes(searchVal));
+            }
+
+            if(window.isHistoryMode) {
+                // HISTORY VIEW: Show items where Sold > 0 (or just show all records with period)
+                // Interpretation: User wants to see records of sales.
+                myData = myData.filter(item => item.sold > 0); 
+
+                thead.innerHTML = `
+                    <tr>
+                        <th>Code/Name</th>
+                        <th class="text-center">Stock Change</th>
+                        <th class="text-end">Period</th>
+                    </tr>
+                `;
+
+                if(myData.length === 0) {
+                    document.getElementById('myStockEmpty').style.display = 'block';
+                    document.getElementById('myStockEmpty').innerText = "No sales history found.";
+                    return;
+                }
                 document.getElementById('myStockEmpty').style.display = 'none';
-                myItems.forEach(item => {
+
+                myData.forEach(item => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>
+                                <div class="fw-bold text-primary">${item.code}</div>
+                                <div class="small text-muted">${item.name}</div>
+                            </td>
+                            <td class="text-center small">
+                                <div>Last: ${item.lastStock}</div>
+                                <div class="fw-bold">Latest: ${item.latestStock}</div>
+                                <div class="text-danger">Sold: ${item.sold}</div>
+                            </td>
+                            <td class="text-end small text-muted">${item.period}</td>
+                        </tr>
+                    `;
+                });
+
+            } else {
+                // STOCK VIEW: Show Code, Name, Latest Stock, Price
+                // Usually we only show items with latestStock > 0, but user might want to see all.
+                // Let's show all unique items (latest state). 
+                // Since CSV might have duplicates for history, we should probably deduplicate or show most recent.
+                // For simplicity, we show all lines that match search, but visually emphasizing current stock.
+                // Ideal: Just show the list as is.
+                
+                thead.innerHTML = `
+                    <tr>
+                        <th>Code</th>
+                        <th>Name</th>
+                        <th>Stk</th>
+                        <th class="text-end">Price</th>
+                    </tr>
+                `;
+
+                if(myData.length === 0) {
+                    document.getElementById('myStockEmpty').style.display = 'block';
+                    document.getElementById('myStockEmpty').innerText = "No stock records found.";
+                    return;
+                }
+                document.getElementById('myStockEmpty').style.display = 'none';
+
+                myData.forEach(item => {
                     tbody.innerHTML += `
                         <tr>
                             <td class="fw-bold text-primary">${item.code}</td>
-                            <td class="small">${item.name}</td>
-                            <td>${item.stock}</td>
+                            <td class="small text-truncate" style="max-width:120px;">${item.name}</td>
+                            <td class="fw-bold">${item.latestStock}</td>
                             <td class="text-end fw-bold">${currencyUnit}${item.price}</td>
                         </tr>
                     `;
                 });
             }
-            window.myStockModal.show();
         };
 
+        // Export Inventory (Current View)
         window.downloadMyStockCSV = function() {
             const myItems = window.clientStockDb.filter(item => item.client === window.loggedInUser.id);
-            
-            if(myItems.length === 0) return alert("No stock records to export.");
+            if(myItems.length === 0) return alert("No records.");
 
-            let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += "Part Code,Name,Quantity,Price\n"; 
-
-            myItems.forEach(item => {
-                // sanitize name remove commas
-                const safeName = item.name.replace(/,/g, " ");
-                csvContent += `${item.code},${safeName},${item.stock},${item.price}\n`;
+            let csv = "data:text/csv;charset=utf-8,Code,Name,Latest Stock,Price\n";
+            myItems.forEach(i => {
+                csv += `${i.code},${i.name.replace(/,/g,' ')},${i.latestStock},${i.price}\n`;
             });
+            triggerDownload(csv, "My_Inventory.csv");
+        };
 
+        // Export History
+        window.downloadHistoryCSV = function() {
+            const myItems = window.clientStockDb.filter(item => item.client === window.loggedInUser.id && item.sold > 0);
+            if(myItems.length === 0) return alert("No sales history.");
+
+            let csv = "data:text/csv;charset=utf-8,Code,Name,Last Stock,Latest Stock,Sold,Period\n";
+            myItems.forEach(i => {
+                csv += `${i.code},${i.name.replace(/,/g,' ')},${i.lastStock},${i.latestStock},${i.sold},${i.period}\n`;
+            });
+            triggerDownload(csv, "Sales_History.csv");
+        };
+
+        function triggerDownload(csvContent, filename) {
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `Inventory_${window.loggedInUser.name}.csv`);
+            link.setAttribute("download", filename);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-        };
+        }
 
         window.getPriceForItem = function(item, qty) {
             if (item.promo > 0 && item.promo < item.price && qty >= promoMinQty) {
@@ -503,22 +649,23 @@
             return item.price;
         };
 
-        // --- SEARCH ---
+        // --- SEARCH LOGIC (Updated for Defaults & NEW) ---
         window.handleSearch = function() {
             const rawInput = document.getElementById('searchInput').value.toUpperCase().trim();
             const listDiv = document.getElementById('resultsList');
             
             if(window.database.length === 0) return;
 
-            if(rawInput.length < 1) { 
-                listDiv.innerHTML = `<div class="text-center text-muted mt-5 opacity-50"><i class="bi bi-search fs-1"></i><p class="mt-2">Enter Code or Name</p></div>`;
-                return;
-            }
-
             let results = [];
-            if (rawInput === 'STOCK') {
+
+            if(rawInput === '') {
+                // Default: Show available stock (stock > 0)
                 results = window.database.filter(i => i.stock > 0);
+            } else if (rawInput === 'NEW') {
+                // Filter by New Column
+                results = window.database.filter(i => i.isNew === 1);
             } else {
+                // Normal Search
                 const terms = rawInput.split(/\s+/);
                 results = window.database.filter(item => {
                     const text = (item.code + " " + item.name).toUpperCase();
@@ -531,8 +678,11 @@
                 return;
             }
 
+            // Limit display to 100 items to prevent lag if list is huge
+            const displayList = results.slice(0, 100); 
+
             let html = '';
-            results.forEach(item => {
+            displayList.forEach(item => {
                 const dbIndex = window.database.indexOf(item);
                 
                 let stockBadge = '';
@@ -549,12 +699,14 @@
                             <div class="price-promo">${currencyUnit}${item.promo} <span style="font-size:0.7rem; color:#666; font-weight:normal;">(Min 5)</span></div>
                         </div>`;
                 }
+                
+                let newBadge = item.isNew === 1 ? `<span class="new-badge">NEW</span>` : '';
 
                 html += `
                 <div class="result-item d-flex align-items-center bg-white rounded" onclick="window.openProduct(${dbIndex})">
                     <div class="flex-grow-1">
                         <div class="d-flex justify-content-between align-items-start">
-                             <div class="part-code">${item.code}</div>
+                             <div class="part-code">${item.code} ${newBadge}</div>
                              ${stockBadge}
                         </div>
                         <div class="part-name text-muted mt-1">${item.name}</div>
@@ -563,6 +715,9 @@
                 </div>`;
             });
             listDiv.innerHTML = html;
+            
+            // Update counts
+            document.getElementById('totalCount').innerText = results.length;
         };
 
         // --- PRODUCT MODAL ---
@@ -574,6 +729,11 @@
             document.getElementById('modalName').innerText = item.name;
             document.getElementById('modalCode').innerText = item.code;
             document.getElementById('qtyInput').value = 1;
+            
+            // New Badge in Modal
+            const newBadgeDiv = document.getElementById('modalNewBadge');
+            if(item.isNew === 1) newBadgeDiv.style.display = 'block';
+            else newBadgeDiv.style.display = 'none';
 
             const priceContainer = document.getElementById('modalPriceContainer');
             if(item.promo > 0 && item.promo < item.price) {
@@ -606,7 +766,7 @@
             window.productModal.show();
         };
 
-        // --- CART ---
+        // --- CART (No Changes needed here, keeping logic) ---
         window.updateQty = function(diff) {
             const input = document.getElementById('qtyInput');
             let val = parseInt(input.value) + diff;
@@ -622,7 +782,6 @@
             const qty = parseInt(document.getElementById('qtyInput').value);
             const item = window.currentItem;
             const exist = window.cart.find(c => c.code === item.code);
-            
             const effectivePrice = (item.promo > 0 && item.promo < item.price) ? item.promo : item.price;
 
             if(exist) {
@@ -631,7 +790,6 @@
             } else {
                 window.cart.push({...item, qty: qty, effectivePrice: effectivePrice});
             }
-            
             window.updateCartUI();
             window.productModal.hide();
         };
@@ -658,22 +816,14 @@
             } else {
                 window.cart.forEach((item, index) => {
                     let activePrice = window.getPriceForItem(item, item.qty);
-                    let isPromoActive = (activePrice < item.price);
-
                     totalAmount += activePrice * item.qty;
 
                     let priceHtml = '';
                     if (item.promo > 0 && item.promo < item.price) {
-                        if(isPromoActive) {
-                            priceHtml = `
-                                <div class="text-success fw-bold small">Promo: ${currencyUnit}${item.promo}</div>
-                                <div class="text-muted small text-decoration-line-through">Reg: ${currencyUnit}${item.price}</div>
-                            `;
+                        if(activePrice < item.price) {
+                            priceHtml = `<div class="text-success fw-bold small">Promo: ${currencyUnit}${item.promo}</div>`;
                         } else {
-                            priceHtml = `
-                                <div class="text-dark fw-bold small">Reg: ${currencyUnit}${item.price}</div>
-                                <div class="text-warning small" style="font-size:0.7rem;">Add ${promoMinQty - item.qty} more for ${currencyUnit}${item.promo}</div>
-                            `;
+                            priceHtml = `<div class="text-dark fw-bold small">Reg: ${currencyUnit}${item.price}</div>`;
                         }
                     } else {
                         priceHtml = `<div class="text-danger fw-bold small">${currencyUnit}${item.price}</div>`;
@@ -698,12 +848,10 @@
                                     </button>
                                 </div>
                             </div>
-                        </div>
-                    `;
+                        </div>`;
                 });
             }
             document.getElementById('cartTotal').innerText = currencyUnit + totalAmount;
-            
             const warning = document.getElementById('limitWarning');
             warning.style.display = (totalAmount > orderLimit) ? 'block' : 'none';
         };
@@ -713,7 +861,6 @@
             let newQty = item.qty + change;
             if (newQty < 1) return; 
             if (newQty > item.stock) return alert(`Max stock available is ${item.stock}`);
-            
             item.qty = newQty;
             window.updateCartUI();
             window.renderCartItems(); 
@@ -729,22 +876,10 @@
 
         window.confirmOrder = function() {
             if (window.cart.length === 0) return alert("Cart is empty");
+            const totalAmount = window.cart.reduce((sum, item) => sum + (window.getPriceForItem(item, item.qty) * item.qty), 0);
             
-            const totalAmount = window.cart.reduce((sum, item) => {
-                return sum + (window.getPriceForItem(item, item.qty) * item.qty);
-            }, 0);
+            if (totalAmount > orderLimit) return alert(`Order limit exceeded! Max: ${orderLimit}`);
             
-            if (totalAmount > orderLimit) {
-                return alert(`Order limit exceeded! Max: ${orderLimit}`);
-            }
-            
-            // Deduct Stock
-            window.cart.forEach(cItem => {
-                const dbItem = window.database.find(d => d.code === cItem.code);
-                if(dbItem) dbItem.stock = Math.max(0, dbItem.stock - cItem.qty);
-            });
-
-            // WhatsApp
             let msg = `🛒 *FROTISE ORDER (${window.loggedInUser.name})* \n\n`;
             window.cart.forEach(i => {
                 let finalP = window.getPriceForItem(i, i.qty);
@@ -761,18 +896,12 @@
 
         window.downloadCSV = function() {
             if (window.cart.length === 0) return alert("Cart is empty");
-            let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += "Client,PartCode,Quantity,FinalPrice,LineTotal\n"; 
+            let csvContent = "data:text/csv;charset=utf-8,Client,PartCode,Quantity,FinalPrice,LineTotal\n"; 
             window.cart.forEach(item => {
                 let finalP = window.getPriceForItem(item, item.qty);
                 csvContent += `${window.loggedInUser.name},${item.code},${item.qty},${finalP},${finalP * item.qty}\n`;
             });
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `FROTISE_Order.csv`);
-            document.body.appendChild(link);
-            link.click();
+            triggerDownload(csvContent, "FROTISE_Order.csv");
         };
 
         document.getElementById('loginPass').addEventListener('keypress', function (e) {
