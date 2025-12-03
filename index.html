@@ -299,6 +299,12 @@
                         <tbody id="myStockTableBody">
                             <!-- Content injected by JS -->
                         </tbody>
+                        <tfoot id="myStockFooter" style="display:none; background-color: #ffebee;">
+                            <tr>
+                                <td colspan="3" class="text-end fw-bold text-danger">TOTAL VALUE:</td>
+                                <td class="fw-bold text-danger" id="historyGrandTotal">0</td>
+                            </tr>
+                        </tfoot>
                     </table>
                     <div id="myStockEmpty" class="text-center py-4 text-muted" style="display:none;">
                         No records found.
@@ -371,7 +377,7 @@
             }, 800);
         });
 
-        // --- 1. LOAD PRODUCTS CSV (New Column: New) ---
+        // --- 1. LOAD PRODUCTS CSV ---
         function loadDataFromCSV() {
             document.getElementById('loadingMsg').style.display = 'block';
             fetch('products.csv?v=' + new Date().getTime())
@@ -393,11 +399,8 @@
             for(let i=1; i<lines.length; i++) {
                 const line = lines[i].trim();
                 if(!line) continue;
-                // Handle potential commas in name with quotes (simple regex split is safer if quotes exist)
-                // But keeping split(',') for simplicity based on your file
                 const cols = line.split(',');
                 
-                // Expecting: Code, Name, Stock, Price, Promo, New
                 if(cols.length >= 4) {
                     let promo = 0;
                     if(cols.length >= 5) promo = parseFloat(cols[4].trim()) || 0;
@@ -424,7 +427,7 @@
             document.getElementById('loadingMsg').style.display = 'none';
         }
 
-        // --- 2. LOAD CLIENT STOCK CSV (Updated 8 Columns) ---
+        // --- 2. LOAD CLIENT STOCK CSV ---
         function loadClientStockCSV() {
             fetch('client_stock.csv?v=' + new Date().getTime())
                 .then(res => res.text())
@@ -472,7 +475,6 @@
                     loadClientStockCSV(); 
                 }
 
-                // Immediately show available stock on home page
                 window.handleSearch(); 
             } else {
                 document.getElementById('loginError').style.display = 'block';
@@ -481,11 +483,11 @@
 
         window.logout = function() { location.reload(); };
 
-        // --- MY STOCK & HISTORY LOGIC ---
+        // --- MY STOCK & HISTORY LOGIC (Revised) ---
         
         window.openMyStock = function() {
             window.isHistoryMode = false;
-            window.toggleStockHistory(false); // Reset to Stock view
+            window.toggleStockHistory(false); 
             window.myStockModal.show();
         };
 
@@ -522,9 +524,12 @@
         window.renderMyStock = function() {
             const tbody = document.getElementById('myStockTableBody');
             const thead = document.getElementById('myStockHead');
+            const tfoot = document.getElementById('myStockFooter');
             const searchVal = document.getElementById('myStockSearch').value.toUpperCase().trim();
+            const title = document.getElementById('myStockTitle');
             
             tbody.innerHTML = '';
+            tfoot.style.display = 'none'; // Hide footer by default
 
             // Filter by Client
             let myData = window.clientStockDb.filter(item => item.client === window.loggedInUser.id);
@@ -535,15 +540,19 @@
             }
 
             if(window.isHistoryMode) {
-                // HISTORY VIEW: Show items where Sold > 0 (or just show all records with period)
-                // Interpretation: User wants to see records of sales.
+                // --- HISTORY VIEW ---
                 myData = myData.filter(item => item.sold > 0); 
+                
+                // Get Period from the first item (assuming all share same period for the file)
+                let periodText = myData.length > 0 ? myData[0].period : "";
+                title.innerHTML = `<i class="bi bi-clock-history"></i> Sales History <span class="badge bg-secondary ms-2">${periodText}</span>`;
 
                 thead.innerHTML = `
                     <tr>
                         <th>Code/Name</th>
-                        <th class="text-center">Stock Change</th>
-                        <th class="text-end">Period</th>
+                        <th class="text-center">Sold</th>
+                        <th class="text-end">Price</th>
+                        <th class="text-end">Total</th>
                     </tr>
                 `;
 
@@ -554,31 +563,33 @@
                 }
                 document.getElementById('myStockEmpty').style.display = 'none';
 
+                let grandTotal = 0;
+
                 myData.forEach(item => {
+                    let lineTotal = item.sold * item.price;
+                    grandTotal += lineTotal;
+
                     tbody.innerHTML += `
                         <tr>
                             <td>
                                 <div class="fw-bold text-primary">${item.code}</div>
                                 <div class="small text-muted">${item.name}</div>
                             </td>
-                            <td class="text-center small">
-                                <div>Last: ${item.lastStock}</div>
-                                <div class="fw-bold">Latest: ${item.latestStock}</div>
-                                <div class="text-danger">Sold: ${item.sold}</div>
-                            </td>
-                            <td class="text-end small text-muted">${item.period}</td>
+                            <td class="text-center fw-bold text-danger">${item.sold}</td>
+                            <td class="text-end small">${currencyUnit}${item.price}</td>
+                            <td class="text-end fw-bold">${currencyUnit}${lineTotal}</td>
                         </tr>
                     `;
                 });
 
+                // Show Footer with Total
+                tfoot.style.display = 'table-footer-group';
+                document.getElementById('historyGrandTotal').innerText = currencyUnit + grandTotal;
+
             } else {
-                // STOCK VIEW: Show Code, Name, Latest Stock, Price
-                // Usually we only show items with latestStock > 0, but user might want to see all.
-                // Let's show all unique items (latest state). 
-                // Since CSV might have duplicates for history, we should probably deduplicate or show most recent.
-                // For simplicity, we show all lines that match search, but visually emphasizing current stock.
-                // Ideal: Just show the list as is.
-                
+                // --- INVENTORY VIEW ---
+                title.innerHTML = '<i class="bi bi-box-seam"></i> My Inventory';
+
                 thead.innerHTML = `
                     <tr>
                         <th>Code</th>
@@ -608,7 +619,7 @@
             }
         };
 
-        // Export Inventory (Current View)
+        // Export Inventory
         window.downloadMyStockCSV = function() {
             const myItems = window.clientStockDb.filter(item => item.client === window.loggedInUser.id);
             if(myItems.length === 0) return alert("No records.");
@@ -625,9 +636,10 @@
             const myItems = window.clientStockDb.filter(item => item.client === window.loggedInUser.id && item.sold > 0);
             if(myItems.length === 0) return alert("No sales history.");
 
-            let csv = "data:text/csv;charset=utf-8,Code,Name,Last Stock,Latest Stock,Sold,Period\n";
+            let csv = "data:text/csv;charset=utf-8,Code,Name,Sold,Price,LineTotal,Period\n";
             myItems.forEach(i => {
-                csv += `${i.code},${i.name.replace(/,/g,' ')},${i.lastStock},${i.latestStock},${i.sold},${i.period}\n`;
+                let total = i.sold * i.price;
+                csv += `${i.code},${i.name.replace(/,/g,' ')},${i.sold},${i.price},${total},${i.period}\n`;
             });
             triggerDownload(csv, "Sales_History.csv");
         };
@@ -649,7 +661,7 @@
             return item.price;
         };
 
-        // --- SEARCH LOGIC (Updated for Defaults & NEW) ---
+        // --- SEARCH LOGIC ---
         window.handleSearch = function() {
             const rawInput = document.getElementById('searchInput').value.toUpperCase().trim();
             const listDiv = document.getElementById('resultsList');
@@ -659,13 +671,10 @@
             let results = [];
 
             if(rawInput === '') {
-                // Default: Show available stock (stock > 0)
                 results = window.database.filter(i => i.stock > 0);
             } else if (rawInput === 'NEW') {
-                // Filter by New Column
                 results = window.database.filter(i => i.isNew === 1);
             } else {
-                // Normal Search
                 const terms = rawInput.split(/\s+/);
                 results = window.database.filter(item => {
                     const text = (item.code + " " + item.name).toUpperCase();
@@ -678,7 +687,6 @@
                 return;
             }
 
-            // Limit display to 100 items to prevent lag if list is huge
             const displayList = results.slice(0, 100); 
 
             let html = '';
@@ -715,8 +723,6 @@
                 </div>`;
             });
             listDiv.innerHTML = html;
-            
-            // Update counts
             document.getElementById('totalCount').innerText = results.length;
         };
 
@@ -730,7 +736,6 @@
             document.getElementById('modalCode').innerText = item.code;
             document.getElementById('qtyInput').value = 1;
             
-            // New Badge in Modal
             const newBadgeDiv = document.getElementById('modalNewBadge');
             if(item.isNew === 1) newBadgeDiv.style.display = 'block';
             else newBadgeDiv.style.display = 'none';
@@ -766,7 +771,7 @@
             window.productModal.show();
         };
 
-        // --- CART (No Changes needed here, keeping logic) ---
+        // --- CART ---
         window.updateQty = function(diff) {
             const input = document.getElementById('qtyInput');
             let val = parseInt(input.value) + diff;
