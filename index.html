@@ -587,7 +587,7 @@
                 document.getElementById('historyGrandTotal').innerText = currencyUnit + grandTotal;
 
             } else {
-                // --- INVENTORY VIEW ---
+                // --- INVENTORY VIEW (Optimized for full name display) ---
                 title.innerHTML = '<i class="bi bi-box-seam"></i> My Inventory';
 
                 thead.innerHTML = `
@@ -609,10 +609,10 @@
                 myData.forEach(item => {
                     tbody.innerHTML += `
                         <tr>
-                            <td class="fw-bold text-primary">${item.code}</td>
-                            <td class="small text-truncate" style="max-width:120px;">${item.name}</td>
-                            <td class="fw-bold">${item.latestStock}</td>
-                            <td class="text-end fw-bold">${currencyUnit}${item.price}</td>
+                            <td class="fw-bold text-primary text-nowrap align-middle">${item.code}</td>
+                            <td class="small align-middle" style="word-wrap: break-word; white-space: normal;">${item.name}</td>
+                            <td class="fw-bold align-middle">${item.latestStock}</td>
+                            <td class="text-end fw-bold text-nowrap align-middle">${currencyUnit}${item.price}</td>
                         </tr>
                     `;
                 });
